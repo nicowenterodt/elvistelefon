@@ -1,10 +1,10 @@
 # Elvistelefon
 
-*Thank you, thank you very much.* A macOS menu bar app for voice-to-text transcription powered by OpenAI Whisper, with optional text transformation into the voices of Elvis Presley, Yoda, or Marvin the Paranoid Android.
+*A little less conversation, a little more transcription, please.* A macOS menu bar app that turns your voice into text — powered by OpenAI Whisper — and can rewrite it in the unmistakable style of Elvis Presley, the backwards wisdom of Yoda, or the existential dread of Marvin the Paranoid Android. All shook up and ready to roll.
 
 ## Features
 
-- **Menu bar app** — lives in the macOS menu bar, no Dock icon
+- **Menu bar app** — lives in the macOS menu bar, no Dock icon, hunk-a hunk-a hidden away
 - **Push-to-talk or toggle** — hold a shortcut to record, or press once to start/stop
 - **OpenAI Whisper transcription** — sends audio to the Whisper API for accurate speech-to-text
 - **Tonality modes** — optionally rewrite transcriptions in character:
@@ -24,9 +24,13 @@
 
 ## Installation
 
-### Download DMG
+### Download DMG (pre-built)
 
-Download the latest DMG from [Releases](../../releases), open it, and drag Elvistelefon to your Applications folder.
+Grab the latest DMG and get straight to business:
+
+> **[Download Elvistelefon v1.0.0](https://github.com/nicowenterodt/elvistelefon/releases/download/v1.0.0/Elvistelefon-1.0.0.dmg)**
+
+Or browse all releases on the [Releases page](https://github.com/nicowenterodt/elvistelefon/releases). Open the DMG and drag Elvistelefon to your Applications folder.
 
 ### Homebrew
 
@@ -83,11 +87,11 @@ On first launch, open **Settings** from the menu bar icon:
 
 ## How it works
 
-1. Press the keyboard shortcut to start recording
+1. Press the keyboard shortcut — the King is listening
 2. Audio is captured from the microphone and saved as a temporary file
 3. The audio file is sent to the OpenAI Whisper API for transcription
 4. If a tonality mode is active, the transcription is sent to the Chat Completions API for transformation
-5. The result is copied to the clipboard and shown in a toast notification
+5. The result is copied to the clipboard and shown in a toast notification — thank you, thank you very much
 
 ### Architecture
 
@@ -116,4 +120,4 @@ The key is entered via a `SecureField` (masked input) and cleared from memory af
 
 ## License
 
-MIT
+MIT — take care of business, but share the love.
