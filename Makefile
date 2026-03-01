@@ -36,6 +36,10 @@ bundle: build
 		-c "Add :NSMicrophoneUsageDescription string 'Elvistelefon needs microphone access to record audio for transcription.'" \
 		-c "Add :LSMinimumSystemVersion string 13.0" \
 		"$(APP_BUNDLE)/Contents/Info.plist"
+	@codesign --force --deep --sign - \
+		--options runtime \
+		--entitlements Elvistelefon.entitlements \
+		"$(APP_BUNDLE)"
 	@echo "Built: $(APP_BUNDLE)"
 
 dmg: bundle

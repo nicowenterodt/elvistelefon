@@ -32,6 +32,15 @@ Grab the latest DMG and get straight to business:
 
 Or browse all releases on the [Releases page](https://github.com/nicowenterodt/elvistelefon/releases). Open the DMG and drag Elvistelefon to your Applications folder.
 
+> **Note — the app is not notarized**, so macOS Gatekeeper will block it on first launch. To open it, do one of the following:
+>
+> - **Right-click** the app → **Open** → click **Open** in the dialog, or
+> - Run in Terminal:
+>   ```
+>   xattr -cr /Applications/Elvistelefon.app
+>   ```
+>   then open the app normally.
+
 ### Homebrew
 
 A Homebrew Cask template is included in `Casks/elvistelefon.rb`. To use it, set up a personal tap:
