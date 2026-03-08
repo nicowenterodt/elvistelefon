@@ -1,5 +1,5 @@
 cask "elvistelefon" do
-  version "1.0.0"
+  version "1.0.1"
   sha256 "CHECKSUM"
 
   url "https://github.com/USER/Elvistelefon/releases/download/v#{version}/Elvistelefon-#{version}.dmg"
