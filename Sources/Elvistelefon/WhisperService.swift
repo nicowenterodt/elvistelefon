@@ -12,6 +12,14 @@ enum WhisperService {
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        // Don't push the multipart audio upload over HTTP/3 (QUIC/UDP): large
+        // bodies hit the datagram size limit and fail with EMSGSIZE
+        // ("The operation couldn't be completed. Message too long").
+        // assumesHTTP3Capable=false only suppresses HTTP/3 on the *first* request
+        // to a host; URLSession.shared persists the server's HTTP/3 Alt-Svc hint
+        // to disk and upgrades later requests anyway. A fresh ephemeral session
+        // (no persisted hint) making a single request can never select HTTP/3.
+        request.assumesHTTP3Capable = false
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue(
             "multipart/form-data; boundary=\(boundary)",
@@ -39,9 +47,11 @@ enum WhisperService {
         // closing boundary
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
 
-        request.httpBody = body
-
-        let (data, response) = try await URLSession.shared.data(for: request)
+        // Use an upload task (streams the body) on a fresh ephemeral session so
+        // HTTP/3 can never be selected for this large upload (see note above).
+        let session = URLSession(configuration: .ephemeral)
+        defer { session.finishTasksAndInvalidate() }
+        let (data, response) = try await session.upload(for: request, from: body)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw WhisperError.invalidResponse

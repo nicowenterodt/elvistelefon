@@ -20,12 +20,14 @@ final class AudioRecorder {
         let inputNode = engine.inputNode
         let inputFormat = inputNode.outputFormat(forBus: 0)
 
-        // Target: 16kHz mono for Whisper
+        // Target: 16kHz mono Int16 for Whisper. Int16 halves the file size vs
+        // Float32 (2 bytes/sample instead of 4), keeping uploads small — gentler
+        // on flaky/cellular links. It's also the standard PCM WAV encoding.
         guard let targetFormat = AVAudioFormat(
-            commonFormat: .pcmFormatFloat32,
+            commonFormat: .pcmFormatInt16,
             sampleRate: 16000,
             channels: 1,
-            interleaved: false
+            interleaved: true
         ) else {
             throw RecorderError.formatError
         }
@@ -37,8 +39,8 @@ final class AudioRecorder {
         let file = try AVAudioFile(
             forWriting: tempURL,
             settings: targetFormat.settings,
-            commonFormat: .pcmFormatFloat32,
-            interleaved: false
+            commonFormat: .pcmFormatInt16,
+            interleaved: true
         )
 
         inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { buffer, _ in
@@ -59,11 +61,14 @@ final class AudioRecorder {
             if status != .error, error == nil {
                 try? file.write(from: convertedBuffer)
 
-                // Calculate RMS audio level for metering
-                if let channelData = convertedBuffer.floatChannelData?[0] {
+                // Calculate RMS audio level for metering (Int16 samples → -1...1)
+                if let channelData = convertedBuffer.int16ChannelData?[0] {
                     let frames = Int(convertedBuffer.frameLength)
                     var sum: Float = 0
-                    for i in 0..<frames { sum += channelData[i] * channelData[i] }
+                    for i in 0..<frames {
+                        let sample = Float(channelData[i]) / 32768.0
+                        sum += sample * sample
+                    }
                     let rms = sqrt(sum / max(Float(frames), 1))
                     let level = min(rms * 5, 1.0) // normalize to 0–1
                     self.onAudioLevel?(level)

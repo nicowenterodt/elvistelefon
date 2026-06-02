@@ -35,6 +35,9 @@ enum ChatCompletionService {
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        // Match WhisperService: avoid HTTP/3 (QUIC) so large bodies don't fail
+        // with EMSGSIZE ("Message too long").
+        request.assumesHTTP3Capable = false
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
@@ -50,7 +53,10 @@ enum ChatCompletionService {
 
         request.httpBody = try JSONEncoder().encode(body)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        // Fresh ephemeral session keeps this request off HTTP/3 (see WhisperService).
+        let session = URLSession(configuration: .ephemeral)
+        defer { session.finishTasksAndInvalidate() }
+        let (data, response) = try await session.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw ChatCompletionError.invalidResponse
