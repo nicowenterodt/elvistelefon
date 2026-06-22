@@ -17,13 +17,11 @@ bundle: build
 	@mkdir -p "$(APP_BUNDLE)/Contents/MacOS"
 	@mkdir -p "$(APP_BUNDLE)/Contents/Resources"
 	@cp $(BUILD_DIR)/Elvistelefon "$(APP_BUNDLE)/Contents/MacOS/Elvistelefon"
-	@# Copy resource bundles if they exist
-	@if [ -d "$(BUILD_DIR)/Elvistelefon_Elvistelefon.bundle" ]; then \
-		cp -R "$(BUILD_DIR)/Elvistelefon_Elvistelefon.bundle" "$(APP_BUNDLE)/Contents/Resources/"; \
-	fi
-	@if [ -d "$(BUILD_DIR)/KeyboardShortcuts_KeyboardShortcuts.bundle" ]; then \
-		cp -R "$(BUILD_DIR)/KeyboardShortcuts_KeyboardShortcuts.bundle" "$(APP_BUNDLE)/Contents/Resources/"; \
-	fi
+	@# Copy every SwiftPM resource bundle (app, KeyboardShortcuts, WhisperKit,
+	@# swift-transformers tokenizer/config bundles, etc.) into the .app.
+	@for b in $(BUILD_DIR)/*.bundle; do \
+		[ -e "$$b" ] && cp -R "$$b" "$(APP_BUNDLE)/Contents/Resources/"; \
+	done
 	@/usr/libexec/PlistBuddy -c "Clear dict" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || true
 	@/usr/libexec/PlistBuddy \
 		-c "Add :CFBundleName string '$(APP_NAME)'" \

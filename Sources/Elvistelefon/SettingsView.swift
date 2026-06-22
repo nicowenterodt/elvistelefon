@@ -161,6 +161,55 @@ private struct TonalityModeOption: View {
     }
 }
 
+// MARK: - Model Status
+
+private struct ModelStatusView: View {
+    @ObservedObject var service: LocalWhisperService
+
+    var body: some View {
+        switch service.loadState {
+        case .ready where service.isModelDownloaded:
+            Label("Model ready", systemImage: "checkmark.shield.fill")
+                .foregroundStyle(.green)
+                .font(.system(size: 12))
+        case .downloading(let fraction):
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Downloading model… \(Int(fraction * 100))%")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                ProgressView(value: fraction)
+            }
+        case .loading:
+            HStack(spacing: 8) {
+                ProgressView().controlSize(.small)
+                Text("Loading model…").font(.system(size: 12)).foregroundStyle(.secondary)
+            }
+        case .failed(let message):
+            VStack(alignment: .leading, spacing: 6) {
+                Label(message, systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(.red)
+                    .font(.system(size: 12))
+                Button("Retry download") { Task { await service.prepare() } }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+            }
+        default:
+            HStack {
+                Text(service.isModelDownloaded ? "Model downloaded" : "Model not downloaded")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button(service.isModelDownloaded ? "Reload" : "Download model") {
+                    Task { await service.prepare() }
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.teal)
+                .controlSize(.small)
+            }
+        }
+    }
+}
+
 // MARK: - Settings View
 
 struct SettingsView: View {
@@ -170,8 +219,11 @@ struct SettingsView: View {
     @State private var errorMessage: String?
     @State private var iconTapCount: Int = 0
     @State private var showEasterEgg: Bool = false
+    @ObservedObject private var localWhisper = LocalWhisperService.shared
     @AppStorage("recordingMode") private var recordingMode: String = RecordingMode.pushToTalk.rawValue
     @AppStorage("tonalityMode") private var tonalityMode: String = TonalityMode.normal.rawValue
+    @AppStorage("transcriptionEngine") private var transcriptionEngine: String = TranscriptionEngine.local.rawValue
+    @AppStorage("whisperModel") private var whisperModel: String = "large-v3"
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
@@ -209,9 +261,49 @@ struct SettingsView: View {
                 }
                 .padding(.bottom, 4)
 
+                // Transcription Card
+                SettingsCard {
+                    SettingsCardHeader(icon: "cpu", title: "Transcription", color: .teal)
+
+                    Picker("", selection: $transcriptionEngine) {
+                        Text("On-device").tag(TranscriptionEngine.local.rawValue)
+                        Text("OpenAI API").tag(TranscriptionEngine.openai.rawValue)
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+
+                    if transcriptionEngine == TranscriptionEngine.local.rawValue {
+                        Picker("Model", selection: $whisperModel) {
+                            Text("Tiny — fastest, lowest accuracy").tag("tiny")
+                            Text("Base").tag("base")
+                            Text("Small").tag("small")
+                            Text("Large-v3 — best accuracy").tag("large-v3")
+                        }
+                        .onChange(of: whisperModel) { _ in
+                            localWhisper.markStale()
+                        }
+
+                        ModelStatusView(service: localWhisper)
+
+                        Text("Runs entirely on your Mac — no API key needed. Large-v3 matches or beats the OpenAI API (which uses the older large-v2), at the cost of a ~1 GB download and more compute.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("Audio is sent to OpenAI's Whisper API. Requires an API key below.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
                 // API Key Card
                 SettingsCard {
                     SettingsCardHeader(icon: "key.fill", title: "OpenAI API Key", color: .orange)
+
+                    if transcriptionEngine == TranscriptionEngine.local.rawValue {
+                        Text("Only needed for Tonality transforms (Elvis / Yoda / Marvin). Plain transcription works without a key.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
 
                     if hasKey {
                         HStack {
