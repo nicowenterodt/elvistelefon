@@ -1,11 +1,11 @@
 cask "elvistelefon" do
-  version "1.0.1"
+  version "1.1.0"
   sha256 "CHECKSUM"
 
-  url "https://github.com/USER/Elvistelefon/releases/download/v#{version}/Elvistelefon-#{version}.dmg"
+  url "https://github.com/nicowenterodt/elvistelefon/releases/download/v#{version}/Elvistelefon-#{version}.dmg"
   name "Elvistelefon"
-  desc "Elvis-themed menu bar transcription app using OpenAI Whisper"
-  homepage "https://github.com/USER/Elvistelefon"
+  desc "Elvis-themed menu bar app for on-device Whisper transcription"
+  homepage "https://github.com/nicowenterodt/elvistelefon"
 
   depends_on macos: ">= :ventura"
 

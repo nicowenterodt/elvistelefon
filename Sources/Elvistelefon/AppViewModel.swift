@@ -68,6 +68,14 @@ final class AppViewModel: ObservableObject {
                 self?.registerShortcutHandlers()
             }
         }
+
+        // Prewarm the local model at launch so the first transcription isn't cold —
+        // but only if it's already downloaded (never auto-download on launch).
+        if TranscriptionEngine.current == .local, LocalWhisperService.shared.isModelDownloaded {
+            Task { @MainActor in
+                try? await LocalWhisperService.shared.ensureLoaded()
+            }
+        }
     }
 
     deinit {
@@ -161,29 +169,48 @@ final class AppViewModel: ObservableObject {
             return
         }
 
-        guard let apiKey = KeychainService.loadAPIKey(), !apiKey.isEmpty else {
+        let engine = TranscriptionEngine.current
+        let apiKey = KeychainService.loadAPIKey()
+        let hasKey = !(apiKey ?? "").isEmpty
+
+        // The OpenAI transcription path needs a key; local transcription does not.
+        if engine == .openai, !hasKey {
             state = .error("No API key — open Settings")
             recorder.cleanup()
             scheduleReset()
             return
         }
 
+        // For local transcription, the model must already be downloaded — don't
+        // kick off a multi-GB download from a hotkey press.
+        if engine == .local, !LocalWhisperService.shared.isModelDownloaded {
+            state = .error("Open Settings to download the transcription model")
+            recorder.cleanup()
+            scheduleReset()
+            return
+        }
+
+        let provider: TranscriptionProvider = engine == .local
+            ? LocalWhisperService.shared
+            : OpenAITranscriptionProvider(apiKey: apiKey ?? "")
+
         state = .transcribing
 
         Task { @MainActor in
             do {
-                let response = try await WhisperService.transcribe(fileURL: fileURL, apiKey: apiKey)
+                let response = try await provider.transcribe(fileURL: fileURL)
                 let rawText = response.text.trimmingCharacters(in: .whitespacesAndNewlines)
 
                 var finalText = rawText
                 let mode = tonalityMode
-                if let systemPrompt = mode.systemPrompt(language: response.language) {
+                // Tonality transforms still require an OpenAI key; skip silently without one.
+                if mode != .normal, hasKey, let systemPrompt = mode.systemPrompt(language: response.language) {
                     ToastWindow.shared.showTransforming(mode: mode)
                     do {
                         finalText = try await ChatCompletionService.transform(
                             text: rawText,
                             systemPrompt: systemPrompt,
-                            apiKey: apiKey
+                            apiKey: apiKey ?? ""
                         )
                     } catch {
                         // Silent fallback to raw transcription
