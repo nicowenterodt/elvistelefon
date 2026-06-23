@@ -1,13 +1,14 @@
 # Elvistelefon
 
-*A little less conversation, a little more transcription, please.* A macOS menu bar app that turns your voice into text — powered by OpenAI Whisper — and can rewrite it in the unmistakable style of Elvis Presley, the backwards wisdom of Yoda, or the existential dread of Marvin the Paranoid Android. All shook up and ready to roll.
+*A little less conversation, a little more transcription, please.* A macOS menu bar app that turns your voice into text — transcribed **on-device** with Whisper (no API key, no cloud) — and can rewrite it in the unmistakable style of Elvis Presley, the backwards wisdom of Yoda, or the existential dread of Marvin the Paranoid Android. All shook up and ready to roll.
 
 ## Features
 
 - **Menu bar app** — lives in the macOS menu bar, no Dock icon, hunk-a hunk-a hidden away
 - **Push-to-talk or toggle** — hold a shortcut to record, or press once to start/stop
-- **OpenAI Whisper transcription** — sends audio to the Whisper API for accurate speech-to-text
-- **Tonality modes** — optionally rewrite transcriptions in character:
+- **On-device Whisper transcription** — runs locally via [WhisperKit](https://github.com/argmaxinc/WhisperKit) (CoreML, Apple Silicon); works fully offline, no API key required. Defaults to the `large-v3` model for best accuracy
+- **Optional OpenAI cloud transcription** — switch the engine to the OpenAI Whisper API in Settings if you prefer
+- **Tonality modes** — optionally rewrite transcriptions in character (uses the OpenAI Chat API, so a key is needed *only* for these):
   - **Normal** — raw transcription, no transformation
   - **Elvis Talk** — the King's swagger and Southern charm
   - **Yoda Talk** — inverted speech patterns, hmm
@@ -19,8 +20,9 @@
 
 ## Requirements
 
-- macOS 13 (Ventura) or later
-- An [OpenAI API key](https://platform.openai.com/api-keys)
+- macOS 13 (Ventura) or later, Apple Silicon
+- **No API key needed** for transcription (runs on-device). An [OpenAI API key](https://platform.openai.com/api-keys) is optional — only for the Tonality transforms or the cloud transcription engine
+- First on-device run downloads the Whisper model once (~1 GB for `large-v3`) into `~/Library/Application Support/Elvistelefon/models`
 
 ## Installation
 
@@ -89,17 +91,18 @@ make clean
 
 On first launch, open **Settings** from the menu bar icon:
 
-1. **API Key** — paste your OpenAI API key and click Save
-2. **Recording Mode** — choose Push to Talk (hold to record) or Toggle (press to start/stop)
-3. **Tonality Mode** — choose Normal, Elvis Talk, Yoda Talk, or Marvin Talk
-4. **Keyboard Shortcut** — click the recorder field and press your desired shortcut
+1. **Transcription** — pick the On-device engine (default) and a model size, then click Download to fetch it once. Or switch to the OpenAI API engine
+2. **API Key** *(optional)* — paste your OpenAI API key and click Save; only needed for Tonality transforms or the cloud engine
+3. **Recording Mode** — choose Push to Talk (hold to record) or Toggle (press to start/stop)
+4. **Tonality Mode** — choose Normal, Elvis Talk, Yoda Talk, or Marvin Talk
+5. **Keyboard Shortcut** — click the recorder field and press your desired shortcut
 
 ## How it works
 
 1. Press the keyboard shortcut — the King is listening
 2. Audio is captured from the microphone and saved as a temporary file
-3. The audio file is sent to the OpenAI Whisper API for transcription
-4. If a tonality mode is active, the transcription is sent to the Chat Completions API for transformation
+3. The audio is transcribed **on-device** by WhisperKit (or sent to the OpenAI Whisper API if the cloud engine is selected)
+4. If a tonality mode is active, the transcription is sent to the OpenAI Chat Completions API for transformation (requires a key)
 5. The result is copied to the clipboard and shown in a toast notification — thank you, thank you very much
 
 ### Architecture
@@ -109,8 +112,10 @@ On first launch, open **Settings** from the menu bar icon:
 | `WhisperTranscribeApp.swift` | App entry point, menu bar setup |
 | `AppViewModel.swift` | Core state machine and recording logic |
 | `AudioRecorder.swift` | Microphone capture via AVFoundation |
-| `WhisperService.swift` | OpenAI Whisper API client |
-| `ChatCompletionService.swift` | OpenAI Chat Completions API client |
+| `TranscriptionProvider.swift` | Protocol abstracting local vs OpenAI transcription backends |
+| `LocalWhisperService.swift` | On-device transcription via WhisperKit (model download/load) |
+| `WhisperService.swift` | OpenAI Whisper API client (cloud engine) |
+| `ChatCompletionService.swift` | OpenAI Chat Completions API client (tonality transforms) |
 | `TonalityMode.swift` | Voice transformation modes and prompts |
 | `KeychainService.swift` | API key storage |
 | `MenuBarView.swift` | Menu bar dropdown UI |

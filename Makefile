@@ -1,6 +1,6 @@
 APP_NAME = Elvistelefon
 BUNDLE_ID = com.elvistelefon.app
-VERSION = 1.0.2
+VERSION = 1.1.0
 BUILD_DIR = .build/release
 APP_BUNDLE = build/$(APP_NAME).app
 
