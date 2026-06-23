@@ -128,7 +128,8 @@ The OpenAI API key is stored locally at `~/Library/Application Support/Elvistele
 
 - File permissions `0600` (owner read/write only)
 - Directory permissions `0700` (owner only)
-- `.completeFileProtection` (FileVault encryption at rest)
+
+(macOS data protection / `.completeFileProtection` is not used: it requires the `com.apple.developer.default-data-protection` entitlement, which ad-hoc-signed Cask builds don't have. The owner-only `0600`/`0700` permissions already restrict access to the user.)
 
 The key is entered via a `SecureField` (masked input) and cleared from memory after saving. No keys, tokens, or credentials are hardcoded in the source.
 

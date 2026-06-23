@@ -18,7 +18,12 @@ enum KeychainService {
 
     static func saveAPIKey(_ key: String) throws {
         let data = key.data(using: .utf8)!
-        try data.write(to: storageURL, options: [.atomic, .completeFileProtection])
+        // Note: no .completeFileProtection — NSFileProtectionComplete requires the
+        // com.apple.developer.default-data-protection entitlement, which an ad-hoc
+        // signed (Cask-distributed) build doesn't have, so it fails the atomic write
+        // with NSFileWriteNoPermissionError. The 0o600 file in a 0o700 owner-only
+        // directory already restricts access to the user.
+        try data.write(to: storageURL, options: [.atomic])
         // Owner read/write only
         try FileManager.default.setAttributes(
             [.posixPermissions: 0o600], ofItemAtPath: storageURL.path
