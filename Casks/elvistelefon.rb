@@ -1,6 +1,6 @@
 cask "elvistelefon" do
   version "1.1.1"
-  sha256 "CHECKSUM"
+  sha256 "96c9f7a9bf644a20195cc3f2c6ba319a18568b8de1cebab0fc18855c600b1167"
 
   url "https://github.com/nicowenterodt/elvistelefon/releases/download/v#{version}/Elvistelefon-#{version}.dmg"
   name "Elvistelefon"
